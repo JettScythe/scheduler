@@ -1,25 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import "components/Application.scss";
 import DayList from "./DayList";
-import Appointment from "components/Appointment"
-
-const days = [
-  {
-    id: 1,
-    name: "Monday",
-    spots: 2,
-  },
-  {
-    id: 2,
-    name: "Tuesday",
-    spots: 5,
-  },
-  {
-    id: 3,
-    name: "Wednesday",
-    spots: 0,
-  },
-];
+import Appointment from "components/Appointment";
+import axios from "axios";
 
 const appointments = [
   {
@@ -35,8 +18,8 @@ const appointments = [
         id: 1,
         name: "Sylvia Palmer",
         avatar: "https://i.imgur.com/LpaY82x.png",
-      }
-    }
+      },
+    },
   },
   {
     id: 3,
@@ -46,9 +29,9 @@ const appointments = [
       interviewer: {
         id: 2,
         name: "Tori Malcolm",
-        avatar: "https://i.imgur.com/Nmx0Qxo.png"
-      }
-    }
+        avatar: "https://i.imgur.com/Nmx0Qxo.png",
+      },
+    },
   },
   {
     id: 4,
@@ -62,19 +45,24 @@ const appointments = [
       interviewer: {
         id: 3,
         name: "Mildred Nazir",
-        avatar: "https://i.imgur.com/T2WwVfS.png"
-      }
-    }
-  }
+        avatar: "https://i.imgur.com/T2WwVfS.png",
+      },
+    },
+  },
 ];
 
 export default function Application(props) {
-  const [day, setDay] = useState("Monday")
+  const [day, setDay] = useState("Monday");
+  const [days, setDays] = useState([]);
   const appointment = appointments.map((appointmentData) => {
-    return (
-      appointmentData.interview ? <Appointment key={appointmentData.id} {...appointmentData} /> : <Appointment time={appointmentData.time} />
-    )
-  })
+    return <Appointment key={appointmentData.id} {...appointmentData} />;
+  });
+  useEffect(() => {
+    const URL = `/api/days`;
+    axios.get(URL).then((response) => {
+      setDays([...response.data]);
+    });
+  }, []);
 
   return (
     <main className="layout">
@@ -85,7 +73,9 @@ export default function Application(props) {
           alt="Interview Scheduler"
         />
         <hr className="sidebar__separator sidebar--centered" />
-        <nav className="sidebar__menu"><DayList days={days} day={day} setDay={setDay} /></nav>
+        <nav className="sidebar__menu">
+          <DayList days={days} day={day} setDay={setDay} />
+        </nav>
         <img
           className="sidebar__lhl sidebar--centered"
           src="images/lhl.png"
