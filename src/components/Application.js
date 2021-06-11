@@ -3,13 +3,18 @@ import "components/Application.scss";
 import DayList from "./DayList";
 import Appointment from "components/Appointment";
 import axios from "axios";
-import { getAppointmentsForDay } from "helpers/selectors";
+import {
+  getAppointmentsForDay,
+  getInterview,
+  getInterviewersForDay,
+} from "helpers/selectors";
 
 export default function Application(props) {
   const [state, setState] = useState({
     day: "Monday",
     days: [],
     appointments: {},
+    interviewers: {},
   });
 
   let dailyAppointments = [];
@@ -17,9 +22,52 @@ export default function Application(props) {
   const setDay = (day) => setState({ ...state, day });
 
   dailyAppointments = getAppointmentsForDay(state, state.day);
+  const dailyInterviewers = getInterviewersForDay(state, state.day);
 
-  const appointment = dailyAppointments.map((appointmentData) => {
-    return <Appointment key={appointmentData.id} {...appointmentData} />;
+  function bookInterview(id, interview) {
+    const appointment = {
+      ...state.appointments[id],
+      interview: { ...interview },
+    };
+    const appointments = {
+      ...state.appointments,
+      [id]: appointment,
+    };
+    return axios.put(`/api/appointments/${id}`, { interview }).then(() => {
+      setState({
+        ...state,
+        appointments,
+      });
+    });
+  }
+
+  function cancelInterview(id, interview) {
+    const appointment = {
+      ...state.appointments[id],
+      interview: { ...interview },
+    };
+    const appointments = { ...state.appointments, [id]: appointment };
+    return axios.delete(`/api/appointments/${id}`).then(() => {
+      setState({
+        ...state,
+        appointments,
+      });
+    });
+  }
+
+  const schedule = dailyAppointments.map((appointmentData) => {
+    const interview = getInterview(state, appointmentData.interview);
+    return (
+      <Appointment
+        key={appointmentData.id}
+        id={appointmentData.id}
+        time={appointmentData.time}
+        interview={interview}
+        interviewers={dailyInterviewers}
+        bookInterview={bookInterview}
+        cancelInterview={cancelInterview}
+      />
+    );
   });
 
   useEffect(() => {
@@ -36,6 +84,7 @@ export default function Application(props) {
         ...prev,
         days: all[0].data,
         appointments: all[1].data,
+        interviewers: all[2].data,
       }));
     });
   }, []);
@@ -59,7 +108,7 @@ export default function Application(props) {
         />
       </section>
       <section className="schedule">
-        {appointment}
+        {schedule}
         <Appointment key="last" time="5pm" />
       </section>
     </main>
