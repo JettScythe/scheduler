@@ -53,8 +53,7 @@ export default function Appointment(props) {
   }
 
   return (
-    <>
-      <article className="appointment"></article>
+    <article className="appointment">
       <Header time={props.time} />
       {mode === EMPTY && <Empty onAdd={() => transition(CREATE)} />}
       {mode === SAVING && <Status message="Saving" />}
@@ -92,6 +91,6 @@ export default function Appointment(props) {
       {mode === ERROR_DELETE && (
         <Error message="There was an error deleting the file" onClose={back} />
       )}
-    </>
+    </article>
   );
 }
