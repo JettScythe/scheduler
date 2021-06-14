@@ -6,6 +6,19 @@ export default function useApplicationData() {
   const SET_APPLICATION_DATA = "SET_APPLICATION_DATA";
   const SET_INTERVIEW = "SET_INTERVIEW";
 
+  const findRemainingSpots = (state, id, appointments) => {
+    const days = [...state.days];
+    const dayIndex = days.findIndex((day) => day.appointments.includes(id));
+    let spots = 0;
+
+    days[dayIndex].appointments.forEach((appointment) => {
+      !appointments[appointment].interview && spots++;
+    });
+
+    days[dayIndex].spots = spots;
+    return days;
+  };
+
   function reducer(state, action) {
     switch (action.type) {
       case SET_DAY:
@@ -21,11 +34,25 @@ export default function useApplicationData() {
           interviewers: action.interviewers,
         };
       case SET_INTERVIEW: {
+        const { id, interview } = action;
+
+        const appointment = {
+          ...state.appointments[id],
+          interview: interview ? { ...interview } : null,
+        };
+
+        const appointments = {
+          ...state.appointments,
+          [id]: appointment,
+        };
+
+        const days = findRemainingSpots(state, id, appointments);
+
         return {
           ...state,
-          id: action.id,
-          interview: action.interview,
-        }; /* insert logic */
+          appointments,
+          days,
+        };
       }
       default:
         throw new Error(
@@ -40,22 +67,36 @@ export default function useApplicationData() {
     interviewers: {},
   });
 
-  const findRemainingSpots = (days, id, appointments) => {
-    const theDay = days.find((day) => day.appointments.includes(id));
-    let numOfSpots = 0;
-    for (let appointment in appointments) {
-      if (
-        !appointments[appointment].interview &&
-        theDay.appointments.includes(appointments[appointment].id)
-      ) {
-        numOfSpots++;
+  /*   const findDay = (days, dayToUpdate) => {
+    return days.reduce((acc, day, index) => {
+      if (day.name === dayToUpdate) {
+        acc.push(day)
+        acc.push(index)
       }
-    }
-    theDay.spots = numOfSpots;
-    return theDay;
-  };
+    }, [])
+  }
+  
+
+  const updateSpots = (state, day) => {
+    const dayToUpdate = day || state.day;
+    const dayObj = state.days.find((day) => day.name === dayToUpdate);
+    const dayObjIndex = state.days.findIndex((day) => day.name === dayToUpdate);
+    const listOfApptIds = dayObj.appointments
+    const spots = listOfApptIds.filter(apptId => !state.appointments[apptId].interview).length
+    const newDay = { ...dayToUpdate, spots}
+    const newDays = [ ...state.days]
+    newDays[dayObjIndex] = newDay
+    return { ...state, days: newDays}
+
+  }; */
 
   useEffect(() => {
+    const webSocket = new WebSocket("ws://localhost:8001");
+    webSocket.onopen = () => webSocket.send("ping");
+    webSocket.onmessage = (event) => {
+      return JSON.parse(event.data);
+    };
+
     const days = "/api/days";
     const appointments = "/api/appointments";
     const interviewers = "/api/interviewers";
@@ -65,6 +106,7 @@ export default function useApplicationData() {
       axios.get(appointments),
       axios.get(interviewers),
     ]).then((all) => {
+      //console.log(all);
       dispatch({
         type: SET_APPLICATION_DATA,
         days: all[0].data,
@@ -72,33 +114,18 @@ export default function useApplicationData() {
         interviewers: all[2].data,
       });
     });
-  });
+  }, []);
 
   const setDay = (day) => dispatch({ type: SET_DAY, day });
   const bookInterview = (id, interview) => {
-    const appointment = {
-      ...state.appointments[id],
-      interview: { ...interview },
-    };
-    const appointments = {
-      ...state.appointments,
-      [id]: appointment,
-    };
     console.log(interview);
     return axios.put(`/api/appointments/${id}`, { interview }).then(() => {
-      findRemainingSpots(state.days, id, appointments);
       dispatch({ type: SET_INTERVIEW, id, interview });
     });
   };
 
   const cancelInterview = (id) => {
-    const appointment = {
-      ...state.appointments[id],
-      interview: null,
-    };
-    const appointments = { ...state.appointments, [id]: appointment };
     return axios.delete(`/api/appointments/${id}`).then(() => {
-      findRemainingSpots(state.days, id, appointments);
       dispatch({ type: SET_INTERVIEW, id, interview: null });
     });
   };
