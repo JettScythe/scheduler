@@ -67,36 +67,7 @@ export default function useApplicationData() {
     interviewers: {},
   });
 
-  /*   const findDay = (days, dayToUpdate) => {
-    return days.reduce((acc, day, index) => {
-      if (day.name === dayToUpdate) {
-        acc.push(day)
-        acc.push(index)
-      }
-    }, [])
-  }
-  
-
-  const updateSpots = (state, day) => {
-    const dayToUpdate = day || state.day;
-    const dayObj = state.days.find((day) => day.name === dayToUpdate);
-    const dayObjIndex = state.days.findIndex((day) => day.name === dayToUpdate);
-    const listOfApptIds = dayObj.appointments
-    const spots = listOfApptIds.filter(apptId => !state.appointments[apptId].interview).length
-    const newDay = { ...dayToUpdate, spots}
-    const newDays = [ ...state.days]
-    newDays[dayObjIndex] = newDay
-    return { ...state, days: newDays}
-
-  }; */
-
   useEffect(() => {
-    const webSocket = new WebSocket("ws://localhost:8001");
-    webSocket.onopen = () => webSocket.send("ping");
-    webSocket.onmessage = (event) => {
-      return JSON.parse(event.data);
-    };
-
     const days = "/api/days";
     const appointments = "/api/appointments";
     const interviewers = "/api/interviewers";
@@ -114,6 +85,24 @@ export default function useApplicationData() {
         interviewers: all[2].data,
       });
     });
+    try {
+      const webSocket = new WebSocket(process.env.REACT_APP_WEBSOCKET_URL);
+      webSocket.onopen = () => {
+        webSocket.send("ping");
+        webSocket.onmessage = (event) => {
+          const { type, id, interview } = JSON.parse(event.data);
+          if (type === "SET_INTERVIEW") {
+            dispatch({
+              type,
+              id,
+              interview,
+            });
+          }
+        };
+      };
+    } catch (err) {
+      console.error(err);
+    }
   }, []);
 
   const setDay = (day) => dispatch({ type: SET_DAY, day });
