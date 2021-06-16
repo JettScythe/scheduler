@@ -4,7 +4,7 @@ React based website to create meetings for students to connect with mentors in r
 
 ## View Production Server:
 
-https://boring-goldwasser-8748e2.netlify.app/
+https://scheduler.jettscythe.xyz/
 
 !["GIF of home page"](https://github.com/JettScythe/scheduler/blob/master/docs/scheduler.gif?raw=true)
 
